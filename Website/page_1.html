@@ -3,16 +3,21 @@
 <title>Conference Summarization </title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="all.css">
+<link rel="stylesheet" href="/summarize/Website/all.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-
 <style>
 body,h1,h2,h3,h4,h5,h6 {font-family: "Lato", sans-serif}
 .w3-bar,h1,button {font-family: "Montserrat", sans-serif}
-.fa-laptop,.fa-laptop {font-size:200px}
+.fa-laptop,.fa-coffee {font-size:200px}
+.hidden { display: none}
+.inline { float: left}
 </style>
+<link rel="stylesheet" href="/summarize/Website/main.css" type="text/css" media="all">
+<script src="/summarize/Website/capture.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+<meta charset="utf-8" />
 <body>
 
 <!-- Navbar -->
@@ -39,24 +44,325 @@ body,h1,h2,h3,h4,h5,h6 {font-family: "Lato", sans-serif}
 <!-- First Grid -->
 <div class="w3-row-padding w3-padding-64 w3-container">
   <div class="w3-content">
-    <div class="w3-twothird">
+    <div class="w3-twothird" style="width: 90%">
       <h1>The App</h1>
-      <h5 class="w3-padding-32">  </h5>
 
-      <p class="w3-text-grey">Place the recorder here.</p>
+          <p>
+            <button id="emotionStartButton" disabled="disabled">Start 📷</button> 
+            <button id="emotionStopButton" disabled="disabled">Stop ✋</button> 
+          </p>
+  <div class="camera inline">
+    <video id="video">Video stream not available.</video>
+    <button id="startbutton"></button> 
+  </div>
+  <canvas id="canvas">
+  </canvas>
+  <div class="output" style="display: none">
+    <img id="photo" alt="The screen capture will appear in this box."> 
+  </div>
+   <div id="jsonResponse" class="hidden">    
+    </div>
+          <div class="inline">
+    <textarea id="totalResult" rows="11" cols="50" disabled>
+    </textarea>
+          </div>
     </div>
 
 <!--     <div class="w3-third w3-center">
       <i class="fa fa-laptop w3-padding-64 w3-text-red"></i>
     </div> -->
   </div>
+    <table class="hidden">
+        <tr>
+            <td></td>
+            <td>
+                <h1 style="font-weight:500;">Speech Recognition</h1>
+                <h2 style="font-weight:500;">Microsoft Cognitive Services</h2>
+            </td>
+        </tr>
+        <tr>
+            <td align="right"><a href="https://www.microsoft.com/cognitive-services/en-us/sign-up" target="_blank">Subscription</a>:</td>
+            <td><input id="key" type="text" size="40" value="YOUR_BING_SPEECH_API_KEY"></td>
+        </tr>
+        <tr>
+            <td align="right">Laguage:</td>
+            <td align="left">
+                <select id="languageOptions">
+                    <option value="zh-CN">Chinese - CN</option>
+                    <option value="en-GB">English - GB</option>
+                    <option value="en-US" selected="selected">English - US</option>
+                    <option value="fr-FR">French - FR</option>
+                    <option value="de-DE">German - DE</option>
+                    <option value="it-IT">Italian - IT</option>
+                    <option value="es-ES">Spanish - ES</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>Status: <span id="statusDiv"></span></td>
+        </tr>
+    </table>
+    <!-- The SDK has a dependency on requirejs (http://requirejs.org/). -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.3.3/require.min.js"></script>
+    <script type="text/javascript">
+        // Special handling to let the sample work when loaded directly from file system.
+        if (window.location.protocol == "file:") {
+            document.write('\<script src="http://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.3/require.min.js">\<\/script>');
+        }
+    </script>
+
+    <!-- SDK REFERENCE -->
+    <script src="/summarize/Website/distrib\speech.browser.sdk-min.js"></script>
+
+    <!-- SDK USAGE -->
+    <script>
+    function guid() {
+        function s4() {
+          return Math.floor((1 + Math.random()) * 0x10000)
+            .toString(16)
+            .substring(1);
+        }
+        return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+          s4() + '-' + s4() + s4() + s4();
+    }
+    
+    var concise_id = sessionStorage.getItem('concise_id');
+    if (concise_id === null){
+        concise_id = guid();
+        sessionStorage.setItem('concise_id', concise_id);
+        var subject = 'Global hackaton concise presentation';
+        var email  = 'raul.mdelfin@gmail.com,Tegester@crimson.ua.edu,julienjeanpierre97@gmail.com,mail@anujaggarwal.com,bhimsen27@yahoo.com,jung4351@gmail.com,hajani.s@gmail.com';
+        var registerData = {
+            id: concise_id,
+            subject: subject,
+            email: email
+        }
+        $.ajax({
+                // NOTE: You must use the same location in your REST call as you used to obtain your subscription keys.
+                //   For example, if you obtained your subscription keys from westcentralus, replace "westus" in the 
+                //   URL below with "westcentralus".         
+                url: "http://51.15.131.160:8080/register/",
+                type: 'POST',
+                contentType: "application/json",
+                data: JSON.stringify(registerData)
+            })
+            .done(function(response) {
+                alert('Registration complete!');
+            })
+            .fail(function(XMLHttpRequest, textStatus, errorThrown) {
+                var err = eval("(" + XMLHttpRequest.responseText + ")");
+                alert(err.Message);
+            });
+    }
+    
+    
+        var voiceToText = "";
+        // On doument load resolve the SDK dependecy
+        function Initialize(onComplete) {
+            require(["Speech.Browser.Sdk"], function(SDK) {
+                onComplete(SDK);
+            });
+        }
+        
+        // Setup the recongizer
+        function RecognizerSetup(SDK, recognitionMode, language, format, subscriptionKey) {
+            var recognizerConfig = new SDK.RecognizerConfig(
+                new SDK.SpeechConfig(
+                    new SDK.Context(
+                        new SDK.OS(navigator.userAgent, "Browser", null),
+                        new SDK.Device("SpeechSample", "SpeechSample", "1.0.00000"))),
+                recognitionMode, // SDK.RecognitionMode.Interactive  (Options - Interactive/Conversation/Dictation>)
+                language, // Supported laguages are specific to each recognition mode. Refer to docs.
+                format); // SDK.SpeechResultFormat.Simple (Options - Simple/Detailed)
+
+            // Alternatively use SDK.CognitiveTokenAuthentication(fetchCallback, fetchOnExpiryCallback) for token auth
+            var authentication = new SDK.CognitiveSubscriptionKeyAuthentication(subscriptionKey);
+
+            return SDK.CreateRecognizer(recognizerConfig, authentication);
+        }
+
+        function storeMessage(message) {
+            var data = {
+                id: sessionStorage.getItem('concise_id'),
+                message: message
+            };
+            data = JSON.stringify(data);
+          $.ajax({
+                // NOTE: You must use the same location in your REST call as you used to obtain your subscription keys.
+                //   For example, if you obtained your subscription keys from westcentralus, replace "westus" in the 
+                //   URL below with "westcentralus".         
+                url: "http://51.15.131.160:8080/put/",
+                type: 'POST',
+                contentType: "application/json",
+                data: data
+            })
+            .done(function(response) {
+
+            })
+            .fail(function(XMLHttpRequest, textStatus, errorThrown) {
+                var err = eval("(" + XMLHttpRequest.responseText + ")");
+                alert(err.Message);
+            });
+        }
+        // Start the recognition
+        function RecognizerStart(SDK, recognizer) {
+            recognizer.Recognize((event) => {
+                /*
+                 Alternative syntax for typescript devs.
+                 if (event instanceof SDK.RecognitionTriggeredEvent)
+                */
+                switch(event.Name) {
+                    case "RecognitionTriggeredEvent" :
+                        UpdateStatus("Initializing");
+                        break;
+                    case "ListeningStartedEvent" :
+                        UpdateStatus("Listening");
+                        break;
+                    case "RecognitionStartedEvent" :
+                        UpdateStatus("Listening_Recognizing");
+                        break;
+                    case "SpeechStartDetectedEvent" :
+                        UpdateStatus("Listening_DetectedSpeech_Recognizing");
+                        console.log(JSON.stringify(event.Result)); // check console for other information in result
+                        break;
+                    case "SpeechHypothesisEvent" :
+                        UpdateRecognizedHypothesis(event.Result.Text);
+                        console.log(JSON.stringify(event.Result)); // check console for other information in result
+                        break;
+                    case "SpeechEndDetectedEvent" :
+                        OnSpeechEndDetected();
+                        UpdateStatus("Processing_Adding_Final_Touches");
+                        console.log(JSON.stringify(event.Result)); // check console for other information in result
+                        break;
+                    case "SpeechSimplePhraseEvent" :
+                        UpdateRecognizedPhrase(JSON.stringify(event.Result, null, 3));
+                        if(event.Result.DisplayText !== undefined) {
+                            voiceToText = event.Result.DisplayText;
+                            document.getElementById('totalResult').innerHTML += voiceToText + "\n";
+                            storeMessage(voiceToText);
+                        }
+                        break;
+                    case "SpeechDetailedPhraseEvent" :
+                        UpdateRecognizedPhrase(JSON.stringify(event.Result, null, 3));
+                        break;
+                    case "RecognitionEndedEvent" :
+                        OnComplete();
+                        UpdateStatus("Idle");
+                        console.log(JSON.stringify(event)); // Debug information
+                        if (!stop) {
+                            emotionStartButton.click();
+                        }
+                        break;
+                }
+            })
+            .On(() => {
+                // The request succeeded. Nothing to do here.
+            },
+            (error) => {
+                console.error(error);
+            });
+        }
+        // Stop the Recognition.
+        function RecognizerStop(SDK, recognizer) {
+            // recognizer.AudioSource.Detach(audioNodeId) can be also used here. (audioNodeId is part of ListeningStartedEvent)
+            recognizer.AudioSource.TurnOff();
+        }
+    </script>
+
+    <!-- Browser Hooks -->
+    <script>
+        var emotionStartButton, emotionStopButton, hypothesisDiv, phraseDiv, statusDiv, key, languageOptions, formatOptions;
+        var SDK;
+        var stop = false;
+        var recognizer;
+        var previousSubscriptionKey;
+
+        document.addEventListener("DOMContentLoaded", function () {
+            createBtn = document.getElementById("createBtn");
+            emotionStartButton = document.getElementById("emotionStartButton");
+            emotionStopButton = document.getElementById("emotionStopButton");
+            statusDiv = document.getElementById("statusDiv");
+            key = document.getElementById("key");
+            languageOptions = document.getElementById("languageOptions");
+            formatOptions = 'Simple';
+            
+            languageOptions.addEventListener("change", function () {
+                Setup();
+            });
+
+            emotionStartButton.addEventListener("click", function () {
+                if (!recognizer || previousSubscriptionKey != key.value) {
+                    previousSubscriptionKey = key.value;
+                    Setup();
+                }
+                RecognizerStart(SDK, recognizer);
+                emotionStartButton.disabled = true;
+                stop = false;
+                emotionStopButton.disabled = false;
+            });
+
+            emotionStopButton.addEventListener("click", function () {
+                stop = true;
+                RecognizerStop(SDK, recognizer);
+                emotionStartButton.disabled = false;
+            emotionStopButton.disabled = true;
+            $.ajax({
+                    // NOTE: You must use the same location in your REST call as you used to obtain your subscription keys.
+                    //   For example, if you obtained your subscription keys from westcentralus, replace "westus" in the 
+                    //   URL below with "westcentralus".         
+                    url: "http://51.15.131.160:8080/email/" + sessionStorage.getItem('concise_id'),
+                    type: 'GET',
+                    data: {}
+                })
+                .done(function(response) {
+                    sessionStorage.removeItem('concise_id');
+                    alert('Session finished!');
+                })
+                .fail(function(XMLHttpRequest, textStatus, errorThrown) {
+                    var err = eval("(" + XMLHttpRequest.responseText + ")");
+                    alert(err.Message);
+                });
+            });
+
+            Initialize(function (speechSdk) {
+                SDK = speechSdk;
+                emotionStartButton.disabled = false;
+            });
+        });
+
+        function Setup() {
+            recognizer = RecognizerSetup(SDK, SDK.RecognitionMode.Interactive, languageOptions.value, SDK.SpeechResultFormat[formatOptions.value], key.value);
+        }
+
+        function UpdateStatus(status) {
+            statusDiv.innerHTML = status;
+        }
+
+        function UpdateRecognizedHypothesis(text) {
+            //hypothesisDiv.innerHTML = text;
+        }
+
+        function OnSpeechEndDetected() {
+            emotionStopButton.disabled = true;
+        }
+
+        function UpdateRecognizedPhrase(json) {
+             //phraseDiv.innerHTML = json;
+        }
+
+        function OnComplete() {
+            emotionStartButton.disabled = false;
+            emotionStopButton.disabled = true;
+        }
+    </script>
 </div>
 
 <!-- Second Grid -->
 <div class="w3-row-padding w3-light-grey w3-padding-64 w3-container">
   <div class="w3-content">
     <div class="w3-third w3-center">
-      <i class="fa fa-laptop w3-padding-64 w3-text-red w3-margin-right"></i>
+      <i class="fa fa-coffee w3-padding-64 w3-text-red w3-margin-right"></i>
     </div>
 
     <div class="w3-twothird">
@@ -65,14 +371,14 @@ body,h1,h2,h3,h4,h5,h6 {font-family: "Lato", sans-serif}
 
       <p class="w3-text-grey"><!-- Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Excepteur sint
         occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
-          laboris nisi ut aliquip ex ea commodo consequat. --></p>
-      </div>
+        laboris nisi ut aliquip ex ea commodo consequat. --></p>
+    </div>
   </div>
 </div>
 
-<div class="w3-container w3-black w3-center w3-opacity w3-padding-36">
-    <p>Copyright 2017</p>
-</div>
+<!-- <div class="w3-container w3-black w3-center w3-opacity w3-padding-64">
+    <h1 class="w3-margin w3-xlarge">Quote of the day: live life</h1>
+</div> -->
 
 <!-- Footer -->
 <!-- <footer class="w3-container w3-padding-64 w3-center w3-opacity">  
