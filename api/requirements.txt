@@ -1,0 +1,8 @@
+flask
+gensim
+dataset
+gunicorn
+pymongo
+sendgrid
+numpy
+flask_cors

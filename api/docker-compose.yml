@@ -1,0 +1,13 @@
+version: "3"
+services:
+ api :
+  image : api
+  command : gunicorn --workers=4 main:app --bind=0.0.0.0
+  ports :
+  - "80:8000"
+
+ mongo :
+  image : mongo
+  ports :
+  - "27017:27017"
+
